@@ -32,9 +32,11 @@ def create_app(config_name='default'):
     with app.app_context():
         db.create_all()
 
-  # Registrar blueprints
+    # Registrar blueprints
     from app.blueprints.auth import auth_bp, token_esta_en_blacklist
     jwt.token_in_blocklist_loader(token_esta_en_blacklist)
     app.register_blueprint(auth_bp)
+    from app.blueprints.grades import grades_bp
+    app.register_blueprint(grades_bp)
 
     return app
