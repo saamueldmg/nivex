@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, abort
-from models import Grade, Student
+from backend.models import Grade, Student
 
 public_bp = Blueprint("public", __name__)
 

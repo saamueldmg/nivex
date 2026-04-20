@@ -1,7 +1,8 @@
 from datetime import datetime
 from flask import Blueprint, render_template, request, redirect, url_for, flash
-from extensions import db
-from models import Grade, Student, ClassroomRule, StudentChange, XPActivity
+
+from backend.extensions import db
+from backend.models import Grade, Student, ClassroomRule, StudentChange, XPActivity
 from .utils import generate_students_for_grade
 
 

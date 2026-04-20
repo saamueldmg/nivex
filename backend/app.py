@@ -1,8 +1,8 @@
 import os
 
 from flask import Flask, jsonify, redirect, url_for
-from config import Config
-from extensions import db, migrate
+from backend.config import Config
+from backend.extensions import db, migrate
 from routes.admin import admin_bp
 from routes.public import public_bp
 import models
