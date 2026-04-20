@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NIVEX | Grado {{ grade_name }}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .mesh {
+      background:
+        radial-gradient(circle at top left, rgba(34,211,238,0.16), transparent 28%),
+        radial-gradient(circle at 85% 15%, rgba(59,130,246,0.14), transparent 22%),
+        radial-gradient(circle at 50% 100%, rgba(168,85,247,0.10), transparent 24%);
+    }
+    .scroll-soft::-webkit-scrollbar { width: 8px; height: 8px; }
+    .scroll-soft::-webkit-scrollbar-thumb {
+      background: rgba(148,163,184,.35);
+      border-radius: 999px;
+    }
+    .scroll-soft::-webkit-scrollbar-track { background: transparent; }
+  </style>
+</head>
+<body class="min-h-screen bg-slate-950 text-white mesh">
+  <header class="border-b border-slate-800 bg-slate-900/90 backdrop-blur">
+    <div class="max-w-[1750px] mx-auto px-6 py-6">
+      <div class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <p class="text-cyan-300 text-xs md:text-sm font-semibold tracking-[0.25em] uppercase">NIVEX</p>
+          <h1 class="mt-2 text-3xl md:text-4xl font-black tracking-tight">Grado {{ grade_name }}</h1>
+          <p class="mt-3 max-w-2xl text-slate-300 text-sm">
+            Perfil público del grado. Busca tu nombre y abre tu ficha en modo solo lectura.
+          </p>
+        </div>
+
+        <a
+          href="{{ url_for('public.home') }}"
+          class="inline-flex items-center justify-center rounded-2xl border border-slate-700 bg-slate-800/80 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
+        >
+          ← Volver a grados
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-[1750px] mx-auto px-6 py-6">
+    <section class="rounded-[28px] border border-slate-800 bg-slate-900/80 p-5 md:p-6">
+      <div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+        <div>
+          <p class="text-xs uppercase tracking-[0.22em] text-cyan-300">Listado del grado</p>
+          <h2 class="mt-2 text-xl md:text-2xl font-black tracking-tight">
+            Estudiantes · {{ students|length }}
+          </h2>
+          <p class="mt-2 text-xs md:text-sm text-slate-400">
+            Usa la búsqueda y los filtros para encontrar tu tarjeta rápidamente.
+          </p>
+        </div>
+
+        <div class="flex flex-col gap-3 md:items-end">
+          <div class="flex flex-wrap gap-2">
+            <button
+              type="button"
+              data-filter="all"
+              class="filter-chip inline-flex items-center rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-[11px] font-semibold text-slate-200"
+            >
+              Todos
+            </button>
+            <button
+              type="button"
+              data-filter="high-xp"
+              class="filter-chip inline-flex items-center rounded-full border border-emerald-400/25 bg-emerald-400/10 px-3 py-1.5 text-[11px] font-semibold text-emerald-200"
+            >
+              Más de 0 XP
+            </button>
+            <button
+              type="button"
+              data-filter="no-xp"
+              class="filter-chip inline-flex items-center rounded-full border border-slate-600/60 bg-slate-800 px-3 py-1.5 text-[11px] font-semibold text-slate-300"
+            >
+              Sin XP aún
+            </button>
+          </div>
+
+          <div class="w-full md:w-80">
+            <input
+              type="text"
+              id="searchInput"
+              placeholder="Buscar estudiante..."
+              class="w-full rounded-2xl border border-slate-700 bg-slate-950/80 px-4 py-2.5 text-sm text-white placeholder:text-slate-500 outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20"
+            >
+          </div>
+        </div>
+      </div>
+
+      {% if students %}
+        <div class="mt-5 rounded-2xl border border-slate-800 bg-slate-950/80 p-4 md:p-5">
+          <div class="max-h-[700px] overflow-y-auto scroll-soft">
+            <div
+              class="grid gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4"
+              id="studentsGrid"
+            >
+              {% for student in students %}
+                {% set avatar_url = "https://api.dicebear.com/9.x/adventurer/svg?seed=" ~ student.id %}
+                <a
+                  href="{{ url_for('public.student_detail', grade_name=grade_name, student_id=student.id) }}"
+                  class="student-row group flex flex-col rounded-2xl border border-slate-800 bg-slate-900/80 p-5 text-sm transition hover:border-cyan-400/60 hover:bg-slate-900"
+                  data-name="{{ student.name|lower }}"
+                  data-xp="{{ student.xp }}"
+                >
+                  <div class="flex items-center gap-4">
+                    <div class="h-14 w-14 rounded-2xl border border-slate-700 overflow-hidden bg-slate-800 shrink-0">
+                      <img
+                        src="{{ avatar_url }}"
+                        alt="Avatar de {{ student.name }}"
+                        class="h-full w-full object-cover"
+                        loading="lazy"
+                      >
+                    </div>
+                    <div class="min-w-0">
+                      <p class="text-[15px] font-semibold truncate">{{ student.name }}</p>
+                      <p class="mt-0.5 text-[11px] text-slate-400 truncate">
+                        {{ student.grade }} · Nivel {{ student.level }}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div class="mt-4 flex flex-wrap gap-2">
+                    {# VIDA con semáforo y texto "Revivir" solo en estado rojo #}
+                    {% if student.life >= 80 %}
+                      <span class="inline-flex items-center rounded-full bg-emerald-500/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-200">
+                        ♥ {{ student.life }} vida
+                      </span>
+                    {% elif student.life >= 40 %}
+                      <span class="inline-flex items-center rounded-full bg-amber-500/10 px-2.5 py-1 text-[11px] font-semibold text-amber-200">
+                        ♥ {{ student.life }} vida
+                      </span>
+                    {% else %}
+                      <span class="inline-flex items-center gap-1 rounded-full bg-rose-500/10 px-2.5 py-1 text-[11px] font-semibold text-rose-200">
+                        <span>♥ {{ student.life }} vida</span>
+                        <span class="text-[10px] uppercase tracking-wide font-bold">
+                          Revivir
+                        </span>
+                      </span>
+                    {% endif %}
+
+                    <span class="inline-flex items-center rounded-full bg-cyan-500/10 px-2.5 py-1 text-[11px] font-semibold text-cyan-200">
+                      XP {{ student.xp }}
+                    </span>
+                    <span class="inline-flex items-center rounded-full bg-amber-500/10 px-2.5 py-1 text-[11px] font-semibold text-amber-200">
+                      ⭑ {{ student.coins }} monedas
+                    </span>
+                  </div>
+
+                  <div class="mt-4 flex items-center justify-between text-[11px] text-slate-400">
+                    <span>Último nivel: {{ student.level }}</span>
+                    <span class="font-semibold text-cyan-300 group-hover:text-cyan-200">
+                      Ver perfil →
+                    </span>
+                  </div>
+                </a>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      {% else %}
+        <div class="mt-5 rounded-3xl border border-dashed border-slate-700 bg-slate-900/70 p-10 text-center">
+          <h3 class="text-2xl font-bold">Aún no hay estudiantes</h3>
+          <p class="mt-3 text-slate-400">
+            Crea estudiantes desde el panel del docente para verlos aquí.
+          </p>
+        </div>
+      {% endif %}
+    </section>
+  </main>
+
+  <script>
+    const searchInput = document.getElementById('searchInput');
+    const rows = Array.from(document.querySelectorAll('.student-row'));
+    const chips = Array.from(document.querySelectorAll('.filter-chip'));
+
+    let activeFilter = 'all';
+
+    function applyFilters() {
+      const term = (searchInput?.value || '').toLowerCase().trim();
+
+      rows.forEach(row => {
+        const name = row.dataset.name || '';
+        const xp = parseInt(row.dataset.xp || '0', 10);
+
+        let matchesSearch = !term || name.includes(term);
+        let matchesFilter = true;
+
+        if (activeFilter === 'high-xp') {
+          matchesFilter = xp > 0;
+        } else if (activeFilter === 'no-xp') {
+          matchesFilter = xp === 0;
+        }
+
+        row.style.display = (matchesSearch && matchesFilter) ? '' : 'none';
+      });
+    }
+
+    searchInput?.addEventListener('input', applyFilters);
+
+    chips.forEach(chip => {
+      chip.addEventListener('click', () => {
+        activeFilter = chip.dataset.filter;
+        chips.forEach(c => c.classList.remove('ring-2', 'ring-cyan-400/50'));
+        chip.classList.add('ring-2', 'ring-cyan-400/50');
+        applyFilters();
+      });
+    });
+
+    const allChip = chips.find(c => c.dataset.filter === 'all');
+    if (allChip) {
+      allChip.classList.add('ring-2', 'ring-cyan-400/50');
+    }
+  </script>
+</body>
+</html>

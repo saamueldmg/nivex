@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NIVEX | {{ student.name }}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .history-scroll {
+      scrollbar-width: thin;
+      scrollbar-color: rgba(71, 85, 105, 0.9) rgba(2, 6, 23, 0.35);
+    }
+
+    .history-scroll::-webkit-scrollbar {
+      width: 10px;
+      height: 10px;
+    }
+
+    .history-scroll::-webkit-scrollbar-track {
+      background: rgba(2, 6, 23, 0.45);
+      border-radius: 9999px;
+    }
+
+    .history-scroll::-webkit-scrollbar-thumb {
+      background: linear-gradient(to bottom, rgba(51, 65, 85, 0.95), rgba(71, 85, 105, 0.95));
+      border-radius: 9999px;
+      border: 2px solid rgba(2, 6, 23, 0.45);
+    }
+
+    .history-scroll::-webkit-scrollbar-thumb:hover {
+      background: linear-gradient(to bottom, rgba(100, 116, 139, 0.95), rgba(71, 85, 105, 1));
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-slate-950 text-white">
+  <header class="border-b border-slate-800 bg-slate-900/90 backdrop-blur">
+    <div class="max-w-[1400px] mx-auto px-6 py-5">
+      <div class="flex items-center justify-between gap-4">
+        <div>
+          <p class="text-cyan-300 text-xs md:text-sm font-semibold tracking-[0.25em] uppercase">NIVEX</p>
+          <p class="mt-2 text-sm text-slate-400">Tu panel de progreso</p>
+        </div>
+
+        <a
+          href="{{ url_for('public.grade_detail', grade_name=grade_name) }}"
+          class="inline-flex items-center justify-center rounded-2xl border border-slate-700 bg-slate-800/80 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
+        >
+          ← Volver al grado
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-[1400px] mx-auto px-6 py-8 space-y-6">
+    {% set avatar_url = "https://api.dicebear.com/9.x/adventurer/svg?seed=" ~ student.id %}
+
+    {% set xp_goal = 3000 %}
+    {% set xp_max = 5000 %}
+    {% set xp_clamped = xp_max if student.xp > xp_max else (student.xp if student.xp > 0 else 0) %}
+    {% set xp_progress = (xp_clamped / xp_max) * 100 %}
+    {% set xp_width = xp_progress %}
+
+    {% set life_percent = 0 if student.life < 0 else (student.life if student.life <= 100 else 100) %}
+    {% set life_width = life_percent %}
+
+    <!-- CABECERA LIMPIA -->
+    <section class="rounded-[32px] border border-slate-800 bg-gradient-to-br from-slate-900 via-slate-950 to-slate-950 p-6 md:p-8 shadow-2xl shadow-black/20">
+      <div class="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+        <div class="flex items-center gap-4 min-w-0">
+          <div class="h-20 w-20 md:h-24 md:w-24 rounded-[28px] border border-slate-700 overflow-hidden bg-slate-800 shrink-0">
+            <img
+              src="{{ avatar_url }}"
+              alt="Avatar de {{ student.name }}"
+              class="h-full w-full object-cover"
+              loading="lazy"
+            >
+          </div>
+
+          <div class="min-w-0">
+            <p class="text-xs uppercase tracking-[0.25em] text-cyan-300">Estudiante</p>
+            <h1 class="mt-2 text-3xl md:text-5xl font-black tracking-tight truncate">{{ student.name }}</h1>
+            <p class="mt-2 text-sm md:text-base text-slate-400">
+              {{ student.grade }} · Nivel {{ student.level }}
+            </p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <div class="rounded-2xl border border-amber-500/20 bg-amber-500/10 px-5 py-4 text-right shadow-lg shadow-amber-950/10">
+            <p class="text-[11px] uppercase tracking-[0.18em] text-amber-300">Monedas</p>
+            <p class="mt-1 text-2xl md:text-3xl font-black text-amber-200 tabular-nums">{{ student.coins }}</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- XP + VIDA -->
+    <section class="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
+      <!-- XP -->
+      <div class="rounded-3xl border border-cyan-500/20 bg-gradient-to-br from-cyan-500/10 via-slate-950 to-slate-950 p-6 shadow-xl shadow-cyan-950/10">
+        <div class="flex items-start justify-between gap-4">
+          <div>
+            <p class="text-xs uppercase tracking-[0.22em] text-cyan-200">Experiencia</p>
+            <h2 class="mt-2 text-3xl md:text-4xl font-black tabular-nums text-white">
+              {{ student.xp }} <span class="text-cyan-300">XP</span>
+            </h2>
+          </div>
+
+          <div class="rounded-2xl border border-cyan-500/15 bg-slate-900/70 px-4 py-3 text-right">
+            <p class="text-[11px] uppercase tracking-[0.18em] text-slate-400">Escala</p>
+            <p class="mt-1 text-sm font-semibold text-slate-200">0 · 3000 · 5000</p>
+          </div>
+        </div>
+
+        <p class="mt-3 text-sm text-slate-300">
+          {% if student.xp < xp_goal %}
+            Te faltan <span class="font-semibold text-cyan-100">{{ xp_goal - student.xp }}</span> XP para llegar a la meta.
+          {% elif student.xp < xp_max %}
+            Ya superaste la meta de 3000 XP y sigues avanzando.
+          {% else %}
+            Alcanzaste o superaste el máximo visual de 5000 XP.
+          {% endif %}
+        </p>
+
+        <div class="mt-6 space-y-3">
+          <div class="flex items-center justify-between text-xs text-slate-300">
+            <span>0</span>
+            <span class="text-cyan-200 font-semibold">3000</span>
+            <span>5000</span>
+          </div>
+
+          <div class="relative h-6 w-full overflow-hidden rounded-full bg-slate-800/90 border border-cyan-500/10">
+            <div
+              class="h-full rounded-full bg-gradient-to-r from-cyan-400 via-sky-400 to-cyan-300 shadow-[0_0_20px_rgba(34,211,238,0.25)]"
+              style="width: {{ xp_width }}%;"
+            ></div>
+
+            <div
+              class="absolute inset-y-0 z-10"
+              style="left: {{ (xp_goal / xp_max) * 100 }}%;"
+            >
+              <div class="h-full w-[2px] bg-white/80 shadow-[0_0_14px_rgba(255,255,255,0.7)]"></div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-3 text-[11px] text-slate-400">
+            <div class="text-left">Inicio</div>
+            <div class="text-center text-cyan-200 font-semibold">Meta</div>
+            <div class="text-right">Máximo</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- VIDA -->
+      <div class="rounded-3xl border border-white/10 bg-gradient-to-br from-slate-900 via-slate-950 to-slate-950 p-6 shadow-xl shadow-black/20">
+        <div class="flex items-start justify-between gap-4">
+          <div>
+            <p class="text-xs uppercase tracking-[0.2em] {% if student.is_dead %}text-rose-300{% else %}text-emerald-300{% endif %}">
+              Vida
+            </p>
+            <h2 class="mt-2 text-3xl md:text-4xl font-black tabular-nums {% if student.is_dead %}text-rose-200{% else %}text-white{% endif %}">
+              {{ student.life }}
+            </h2>
+          </div>
+
+          {% if student.pc_number %}
+            <div class="rounded-2xl border border-slate-700 bg-slate-900/80 px-4 py-3 text-right">
+              <p class="text-[11px] uppercase tracking-[0.18em] text-slate-400">PC</p>
+              <p class="mt-1 text-lg font-bold text-fuchsia-200">{{ student.pc_number }}</p>
+            </div>
+          {% endif %}
+        </div>
+
+        <p class="mt-3 text-sm text-slate-300 max-w-md">
+          {% if student.life_reason %}
+            {{ student.life_reason }}
+          {% else %}
+            No hay observaciones recientes sobre tu vida.
+          {% endif %}
+        </p>
+
+        <div class="mt-6">
+          <div class="h-6 w-full overflow-hidden rounded-full bg-slate-800 border border-white/5">
+            <div
+              class="h-full rounded-full {% if student.is_dead %}bg-gradient-to-r from-rose-500 to-pink-500{% else %}bg-gradient-to-r from-emerald-400 to-cyan-400{% endif %}"
+              style="width: {{ life_width }}%;"
+            ></div>
+          </div>
+
+          <div class="mt-2 flex items-center justify-between text-xs text-slate-400">
+            <span>0</span>
+            <span>100</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- HISTORIAL COMPLETO -->
+    <section class="rounded-3xl border border-slate-800 bg-slate-900/85 p-6 shadow-2xl shadow-black/20">
+      <div class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+        <div>
+          <h3 class="text-xl md:text-2xl font-bold">Historial completo</h3>
+          <p class="mt-1 text-slate-400 text-sm">
+            Todo tu recorrido en un solo lugar.
+          </p>
+        </div>
+      </div>
+
+      <div class="mt-5 rounded-2xl border border-slate-800 bg-slate-950/80 overflow-hidden">
+        <div class="history-scroll max-h-[420px] overflow-y-auto overflow-x-auto">
+          <table class="min-w-full text-left text-sm">
+            <thead class="sticky top-0 z-10 bg-slate-950/95 backdrop-blur border-b border-slate-800">
+              <tr class="text-xs uppercase tracking-[0.16em] text-slate-400">
+                <th class="px-4 py-4">Tipo</th>
+                <th class="px-4 py-4">Detalle</th>
+                <th class="px-4 py-4 text-right">Cambio</th>
+              </tr>
+            </thead>
+
+            <tbody class="divide-y divide-slate-800">
+              {% for change in student.changes|reverse %}
+                <tr class="hover:bg-slate-900/60 transition">
+                  <td class="px-4 py-4 align-top">
+                    <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold
+                      {% if change.type == 'Vida' %}
+                        border border-rose-500/35 bg-rose-500/10 text-rose-200
+                      {% elif change.type == 'XP' %}
+                        border border-cyan-500/35 bg-cyan-500/10 text-cyan-200
+                      {% else %}
+                        border border-amber-500/35 bg-amber-500/10 text-amber-200
+                      {% endif %}">
+                      {{ change.type }}
+                    </span>
+                  </td>
+
+                  <td class="px-4 py-4 align-top">
+                    <p class="text-sm leading-6 text-slate-100">
+                      {{ change.reason }}
+                    </p>
+                  </td>
+
+                  <td class="px-4 py-4 align-top text-right">
+                    <p class="text-sm md:text-base font-bold tabular-nums
+                      {% if change.type == 'Vida' %}
+                        text-rose-300
+                      {% elif change.type == 'XP' %}
+                        text-cyan-300
+                      {% else %}
+                        text-amber-300
+                      {% endif %}">
+                      {{ change.amount }}
+                    </p>
+                  </td>
+                </tr>
+              {% else %}
+                <tr>
+                  <td colspan="3" class="px-4 py-10 text-center text-sm text-slate-400">
+                    Aún no hay cambios registrados en tu historial.
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

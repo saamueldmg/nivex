@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NIVEX | {{ grade.name }}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    html, body { min-height: 100%; }
+    body { font-variant-numeric: tabular-nums; }
+
+    .glass {
+      background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+      backdrop-filter: blur(18px);
+    }
+
+    .mesh {
+      background:
+        radial-gradient(circle at top left, rgba(34,211,238,0.16), transparent 28%),
+        radial-gradient(circle at 85% 15%, rgba(59,130,246,0.14), transparent 22%),
+        radial-gradient(circle at 50% 100%, rgba(168,85,247,0.10), transparent 24%);
+    }
+
+    .scroll-soft::-webkit-scrollbar { height: 8px; width: 8px; }
+    .scroll-soft::-webkit-scrollbar-thumb {
+      background: rgba(148,163,184,.35);
+      border-radius: 999px;
+    }
+    .scroll-soft::-webkit-scrollbar-track { background: transparent; }
+
+    .student-row.is-selected {
+      background: rgba(34, 211, 238, 0.06);
+      box-shadow: inset 0 0 0 1px rgba(34, 211, 238, 0.12);
+    }
+
+    .floating-bulk-bar {
+      transform: translate(-50%, 16px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 180ms ease, transform 180ms ease;
+    }
+
+    .floating-bulk-bar.is-visible {
+      transform: translate(-50%, 0);
+      opacity: 1;
+      pointer-events: auto;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-white mesh">
+  <div class="min-h-screen pb-36">
+    <header class="border-b border-white/10 bg-slate-950/65 backdrop-blur-xl sticky top-0 z-20">
+      <div class="max-w-[1650px] mx-auto px-6 py-4">
+        <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <div class="flex items-center gap-3">
+              <span class="inline-flex items-center rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-cyan-200">
+                NIVEX
+              </span>
+              <span class="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-300">
+                Gestión del grupo
+              </span>
+            </div>
+
+            <h1 class="mt-3 text-2xl md:text-3xl font-black tracking-tight">
+              {{ grade.name }} · Estudiantes y progreso
+            </h1>
+
+            <p class="mt-2 text-sm text-slate-300 max-w-2xl">
+              Administra normas, monedas, datos reales del estudiante y el catálogo de actividades XP desde un flujo más limpio.
+            </p>
+          </div>
+
+          <div class="flex flex-wrap gap-3">
+            <button
+              type="button"
+              id="openXpManager"
+              class="inline-flex items-center justify-center rounded-2xl border border-cyan-400/25 bg-cyan-400/10 px-4 py-2.5 text-sm font-semibold text-cyan-200 transition hover:bg-cyan-400/15"
+            >
+              Gestionar actividades XP
+            </button>
+
+            <!-- Reiniciar grado -->
+            <form
+              method="POST"
+              action="{{ url_for('admin.reset_grade_demo', grade_id=grade.id) }}"
+              onsubmit="return confirm('¿Reiniciar vida, XP y monedas de todo el grado? Esta acción no se puede deshacer.');"
+            >
+              <button
+                type="submit"
+                class="inline-flex items-center justify-center rounded-2xl border border-rose-500/40 bg-rose-500/10 px-4 py-2.5 text-sm font-semibold text-rose-200 transition hover:bg-rose-500/20"
+              >
+                Reiniciar grado
+              </button>
+            </form>
+
+            <a
+              href="{{ url_for('admin.dashboard') }}"
+              class="inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-semibold text-slate-100 transition hover:bg-white/10"
+            >
+              Volver al panel
+            </a>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="max-w-[1650px] mx-auto px-6 py-5 space-y-4">
+      <section class="flex flex-wrap gap-3">
+        <article class="glass rounded-2xl border border-white/10 px-4 py-3 min-w-[140px]">
+          <p class="text-[11px] uppercase tracking-[0.16em] text-slate-400">Estudiantes</p>
+          <h2 class="mt-1 text-2xl font-black tracking-tight">{{ students|length }}</h2>
+        </article>
+
+        <article class="glass rounded-2xl border border-white/10 px-4 py-3 min-w-[140px]">
+          <p class="text-[11px] uppercase tracking-[0.16em] text-slate-400">Vida 0</p>
+          <h2 class="mt-1 text-2xl font-black tracking-tight text-rose-300">
+            {{ students | selectattr('is_dead') | list | length }}
+          </h2>
+        </article>
+
+        <article class="glass rounded-2xl border border-white/10 px-4 py-3 min-w-[180px]">
+          <p class="text-[11px] uppercase tracking-[0.16em] text-slate-400">Actividades XP</p>
+          <h2 class="mt-1 text-2xl font-black tracking-tight text-cyan-200">{{ xp_activities|length }}</h2>
+        </article>
+      </section>
+
+      <section class="glass rounded-[28px] border border-white/10 p-5 md:p-6">
+        <div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+          <div>
+            <p class="text-xs uppercase tracking-[0.22em] text-cyan-300">Panel del grado</p>
+            <h2 class="mt-2 text-xl md:text-2xl font-black tracking-tight">Acciones por estudiante</h2>
+            <p class="mt-2 text-xs md:text-sm text-slate-400">
+              Ahora también puedes editar nombre real y número de PC sin salir del panel.
+            </p>
+          </div>
+
+          <div class="flex flex-col gap-3 md:items-end">
+            <div class="flex flex-wrap gap-2">
+              <button
+                type="button"
+                data-filter="all"
+                class="filter-chip inline-flex items-center rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-[11px] font-semibold text-slate-200"
+              >
+                Todos
+              </button>
+              <button
+                type="button"
+                data-filter="risk"
+                class="filter-chip inline-flex items-center rounded-full border border-rose-400/25 bg-rose-400/10 px-3 py-1.5 text-[11px] font-semibold text-rose-200"
+              >
+                En riesgo
+              </button>
+            </div>
+
+            <div class="w-full md:w-auto flex items-center gap-3">
+              <div class="w-full md:w-72">
+                <input
+                  type="text"
+                  id="searchInput"
+                  placeholder="Buscar estudiante o PC..."
+                  class="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-4 py-2.5 text-sm text-white placeholder:text-slate-500 outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20"
+                >
+              </div>
+
+              <div class="hidden md:flex items-center gap-2">
+                <button
+                  type="button"
+                  class="life-filter inline-flex items-center justify-center rounded-full bg-emerald-500/20 px-3 py-1.5 text-[11px] font-semibold text-emerald-200 border border-emerald-400/40"
+                  data-life-filter="high"
+                  title="Vida 80-100"
+                >
+                  ❤
+                </button>
+                <button
+                  type="button"
+                  class="life-filter inline-flex items-center justify-center rounded-full bg-amber-500/15 px-3 py-1.5 text-[11px] font-semibold text-amber-200 border border-amber-400/40"
+                  data-life-filter="medium"
+                  title="Vida 30-79"
+                >
+                  ❤
+                </button>
+                <button
+                  type="button"
+                  class="life-filter inline-flex items-center justify-center rounded-full bg-rose-500/20 px-3 py-1.5 text-[11px] font-semibold text-rose-200 border border-rose-400/50"
+                  data-life-filter="low"
+                  title="Vida menor a 30"
+                >
+                  ❤
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <form
+          id="bulkXpForm"
+          method="POST"
+          action="{{ url_for('admin.apply_xp_activity_bulk', grade_id=grade.id) }}"
+          class="mt-5"
+        >
+        </form>
+
+        <div class="rounded-2xl border border-white/10 bg-slate-950/70 overflow-hidden">
+          <div class="hidden xl:grid grid-cols-[56px_minmax(280px,1.35fr)_88px_88px_minmax(360px,1.4fr)_220px] gap-4 px-4 py-3 border-b border-white/5 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+            <div class="flex items-center justify-center">
+              <input
+                type="checkbox"
+                id="selectAllStudents"
+                class="h-4 w-4 rounded border-white/20 bg-slate-900 text-cyan-400 focus:ring-cyan-400/30"
+                title="Seleccionar todos"
+              >
+            </div>
+            <div>Estudiante</div>
+            <div class="text-center">Vida</div>
+            <div class="text-center">XP</div>
+            <div>Norma · Monedas</div>
+            <div class="text-center">Acciones</div>
+          </div>
+
+          <div id="studentsContainer" class="max-h-[620px] overflow-y-auto scroll-soft divide-y divide-white/5">
+            {% for student in students %}
+              <div
+                class="student-row grid gap-3 px-4 py-4 md:grid-cols-[48px_minmax(0,1.15fr)_80px_80px] xl:grid-cols-[56px_minmax(280px,1.35fr)_88px_88px_minmax(360px,1.4fr)_220px] items-center"
+                data-name="{{ student.full_name|lower }}"
+                data-pc="{{ (student.pc_number or '')|lower }}"
+                data-life="{{ 0 if student.is_dead else student.life }}"
+              >
+                <div class="flex items-center justify-center">
+                  <input
+                    type="checkbox"
+                    name="student_ids"
+                    value="{{ student.id }}"
+                    form="bulkXpForm"
+                    class="student-checkbox h-4 w-4 rounded border-white/20 bg-slate-900 text-cyan-400 focus:ring-cyan-400/30"
+                  >
+                </div>
+
+                <div class="min-w-0">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <p class="text-[14px] font-semibold truncate text-white">{{ student.full_name }}</p>
+
+                    {% if student.pc_number %}
+                      <span class="inline-flex items-center rounded-full border border-fuchsia-400/25 bg-fuchsia-400/10 px-2.5 py-1 text-[10px] font-bold text-fuchsia-200">
+                        PC {{ student.pc_number }}
+                      </span>
+                    {% else %}
+                      <span class="inline-flex items-center rounded-full border border-slate-700 bg-slate-800/80 px-2.5 py-1 text-[10px] font-bold text-slate-300">
+                        Sin PC
+                      </span>
+                    {% endif %}
+                  </div>
+
+                  <p class="mt-1 text-[11px] text-slate-500 hidden md:block truncate">
+                    {% if student.life_reason %}
+                      {{ student.life_reason }}
+                    {% else %}
+                      Sin observaciones recientes.
+                    {% endif %}
+                  </p>
+
+                  <div class="mt-2 flex flex-wrap gap-2 xl:hidden">
+                    <span class="inline-flex items-center rounded-full bg-cyan-500/15 px-2 py-0.5 text-[10px] font-bold text-cyan-200">
+                      XP {{ student.xp }}
+                    </span>
+                    <span class="inline-flex items-center rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold text-amber-200">
+                      {{ student.coins }} monedas
+                    </span>
+                  </div>
+                </div>
+
+                <div class="text-center">
+                  {% if student.is_dead %}
+                    <span class="inline-flex min-w-[38px] items-center justify-center rounded-full bg-rose-500/20 px-2 py-1 text-[11px] font-bold text-rose-200">0</span>
+                  {% else %}
+                    {% if student.life >= 80 %}
+                      <span class="inline-flex min-w-[38px] items-center justify-center rounded-full bg-emerald-500/20 px-2 py-1 text-[11px] font-bold text-emerald-200">{{ student.life }}</span>
+                    {% elif student.life >= 30 %}
+                      <span class="inline-flex min-w-[38px] items-center justify-center rounded-full bg-amber-500/20 px-2 py-1 text-[11px] font-bold text-amber-200">{{ student.life }}</span>
+                    {% else %}
+                      <span class="inline-flex min-w-[38px] items-center justify-center rounded-full bg-rose-500/20 px-2 py-1 text-[11px] font-bold text-rose-200">{{ student.life }}</span>
+                    {% endif %}
+                  {% endif %}
+                </div>
+
+                <div class="hidden md:flex justify-center">
+                  <span class="inline-flex min-w-[38px] items-center justify-center rounded-full bg-cyan-500/15 px-2 py-1 text-[11px] font-bold text-cyan-200">
+                    {{ student.xp }}
+                  </span>
+                </div>
+
+                <div class="md:col-span-3 xl:col-span-1">
+                  <form
+                    action="{{ url_for('admin.apply_rule', student_id=student.id) }}"
+                    method="POST"
+                    class="student-single-form grid gap-3 xl:grid-cols-[1.4fr_1fr]"
+                  >
+                    <select
+                      name="rule_id"
+                      class="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-4 py-2.5 text-xs md:text-sm text-white outline-none transition focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400/30"
+                    >
+                      <option value="">Sin penalización</option>
+                      {% for rule in rules %}
+                        <option value="{{ rule.id }}">
+                          {{ rule.title }} (-{{ rule.life_penalty }} vida)
+                        </option>
+                      {% endfor %}
+                    </select>
+
+                    <input
+                      type="number"
+                      name="coins_delta"
+                      placeholder="+Monedas"
+                      class="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-2.5 text-xs md:text-sm text-white outline-none transition focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400/30 placeholder:text-slate-500"
+                    >
+                  </form>
+                </div>
+
+                <div class="flex flex-col xl:flex-row justify-start xl:justify-center gap-2">
+                  <button
+                    type="button"
+                    data-open-edit-student="{{ student.id }}"
+                    class="inline-flex min-w-[100px] items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-semibold text-slate-100 transition hover:bg-white/10"
+                  >
+                    Editar
+                  </button>
+
+                  <button
+                    type="button"
+                    onclick="this.closest('.student-row').querySelector('.student-single-form').submit();"
+                    class="inline-flex min-w-[110px] items-center justify-center rounded-2xl bg-cyan-400 px-5 py-3 text-sm font-black text-slate-950 shadow-lg shadow-cyan-500/20 transition hover:bg-cyan-300"
+                  >
+                    Aplicar
+                  </button>
+
+                  {% if student.is_dead %}
+                    <form
+                      method="POST"
+                      action="{{ url_for('admin.revive_student', student_id=student.id) }}"
+                      onsubmit="return confirm('¿Revivir a {{ student.full_name }} con 100 de vida?');"
+                    >
+                      <button
+                        type="submit"
+                        class="inline-flex min-w-[110px] items-center justify-center rounded-2xl border border-emerald-400/40 bg-emerald-500/15 px-5 py-3 text-sm font-semibold text-emerald-200 transition hover:bg-emerald-500/25"
+                      >
+                        Revivir
+                      </button>
+                    </form>
+                  {% endif %}
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- BARRA FLOTANTE XP -->
+  <div
+    id="floatingBulkBar"
+    class="floating-bulk-bar fixed bottom-4 left-1/2 z-50 w-[min(1100px,calc(100%-1.5rem))]"
+  >
+    <div class="rounded-[28px] border border-cyan-400/20 bg-slate-950/92 backdrop-blur-2xl shadow-2xl shadow-cyan-500/10">
+      <div class="flex flex-col gap-4 p-4 md:p-5 lg:flex-row lg:items-center lg:justify-between">
+        <div class="min-w-0">
+          <p class="text-[11px] uppercase tracking-[0.2em] text-cyan-300">Selección activa</p>
+          <p class="mt-1 text-sm md:text-base font-bold text-white">
+            <span id="selectedStudentsCountFloating">0</span> estudiante(s) seleccionados
+          </p>
+          <p class="mt-1 text-xs text-slate-400">
+            Aplica la actividad XP sin volver al inicio del panel.
+          </p>
+        </div>
+
+        <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-end w-full lg:w-auto">
+          <select
+            name="xp_activity_id"
+            id="floatingXpActivitySelect"
+            form="bulkXpForm"
+            class="min-w-[260px] w-full lg:w-[320px] rounded-2xl border border-white/10 bg-slate-900/90 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400/30"
+          >
+            <option value="">Selecciona una actividad XP</option>
+            {% for activity in xp_activities %}
+              <option value="{{ activity.id }}">
+                {{ activity.title }} (+{{ activity.xp_amount }} XP)
+              </option>
+            {% endfor %}
+          </select>
+
+          <button
+            type="button"
+            id="clearSelectionBtn"
+            class="inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-slate-100 transition hover:bg-white/10"
+          >
+            Limpiar selección
+          </button>
+
+          <button
+            type="submit"
+            form="bulkXpForm"
+            id="floatingApplyBtn"
+            class="inline-flex items-center justify-center rounded-2xl bg-cyan-400 px-5 py-3 text-sm font-black text-slate-950 shadow-lg shadow-cyan-500/20 transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-50"
+            disabled
+          >
+            Aplicar actividad XP
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% for student in students %}
+    <section
+      data-edit-student-modal="{{ student.id }}"
+      class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6"
+      aria-modal="true"
+      role="dialog"
+    >
+      <div
+        data-edit-student-backdrop="{{ student.id }}"
+        class="absolute inset-0 bg-slate-950/70 backdrop-blur-sm"
+      ></div>
+
+      <div class="relative w-full max-w-xl overflow-hidden rounded-[32px] border border-white/10 bg-slate-900/95 shadow-2xl shadow-cyan-500/10">
+        <div class="border-b border-white/10 px-6 py-5">
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <p class="text-xs uppercase tracking-[0.24em] text-cyan-300">Editar estudiante</p>
+              <h3 class="mt-2 text-2xl font-black tracking-tight">{{ student.full_name }}</h3>
+              <p class="mt-2 text-sm text-slate-300">
+                Actualiza el nombre real y el número del PC.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              data-close-edit-student="{{ student.id }}"
+              class="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-xl text-slate-200 transition hover:bg-white/10"
+              aria-label="Cerrar modal"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+
+        <form action="{{ url_for('admin.update_student', student_id=student.id) }}" method="POST" class="px-6 py-6 space-y-5">
+          <div>
+            <label class="mb-2 block text-sm font-medium text-slate-200">Nombre completo</label>
+            <input
+              type="text"
+              name="full_name"
+              value="{{ student.full_name }}"
+              required
+              class="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-4 py-3 text-white placeholder:text-slate-500 outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20"
+            >
+          </div>
+
+          <div>
+            <label class="mb-2 block text-sm font-medium text-slate-200">Número o código del PC</label>
+            <input
+              type="text"
+              name="pc_number"
+              value="{{ student.pc_number or '' }}"
+              placeholder="Ejemplo: 12, PC-12, LAB-07"
+              class="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-4 py-3 text-white placeholder:text-slate-500 outline-none transition focus:border-fuchsia-400 focus:ring-2 focus:ring-fuchsia-400/20"
+            >
+          </div>
+
+          <div class="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+            <button
+              type="button"
+              data-close-edit-student="{{ student.id }}"
+              class="inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-semibold text-slate-100 transition hover:bg-white/10"
+            >
+              Cancelar
+            </button>
+
+            <button
+              type="submit"
+              class="inline-flex items-center justify-center rounded-2xl bg-cyan-400 px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-cyan-300"
+            >
+              Guardar cambios
+            </button>
+          </div>
+        </form>
+      </div>
+    </section>
+  {% endfor %}
+
+  <!-- MODAL GESTOR XP -->
+  <div id="xpManagerModal" class="fixed inset-0 z-40 hidden items-center justify-center bg-slate-950/80 px-4">
+    <div class="w-full max-w-5xl rounded-[30px] border border-white/10 bg-slate-900 shadow-2xl overflow-hidden">
+      <div class="flex items-center justify-between border-b border-white/10 px-6 py-4">
+        <div>
+          <p class="text-xs uppercase tracking-[0.22em] text-cyan-300">XP</p>
+          <h3 class="mt-1 text-xl md:text-2xl font-black">Gestionar actividades XP</h3>
+        </div>
+        <button type="button" id="closeXpManager" class="text-slate-400 hover:text-white text-xl">✕</button>
+      </div>
+
+      <div class="grid gap-0 md:grid-cols-[360px_1fr]">
+        <div class="border-r border-white/10 p-6 bg-slate-950/40">
+          <h4 class="text-sm font-bold text-white">Nueva actividad</h4>
+
+          <form method="POST" action="{{ url_for('admin.create_xp_activity') }}" class="mt-4 space-y-4">
+            <input type="hidden" name="grade_id" value="{{ grade.id }}">
+
+            <div>
+              <label class="mb-1 block text-xs font-semibold text-slate-300">Título</label>
+              <input
+                type="text"
+                name="title"
+                required
+                placeholder="Ej: Quiz de HTML"
+                class="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400/30"
+              >
+            </div>
+
+            <div>
+              <label class="mb-1 block text-xs font-semibold text-slate-300">XP</label>
+              <input
+                type="number"
+                name="xp_amount"
+                min="1"
+                required
+                placeholder="Ej: 250"
+                class="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400/30"
+              >
+            </div>
+
+            <button
+              type="submit"
+              class="w-full rounded-2xl bg-cyan-400 px-5 py-3 text-sm font-black text-slate-950"
+            >
+              Guardar actividad
+            </button>
+          </form>
+        </div>
+
+        <div class="p-6">
+          <div class="flex items-center justify-between gap-4">
+            <div>
+              <h4 class="text-sm font-bold text-white">Listado actual</h4>
+              <p class="mt-1 text-xs text-slate-400">
+                Edita o elimina actividades sin salir del panel.
+              </p>
+            </div>
+            <span class="inline-flex items-center rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-xs font-semibold text-cyan-200">
+              {{ xp_activities|length }} actividades
+            </span>
+          </div>
+
+          <div class="mt-5 space-y-3 max-h-[520px] overflow-y-auto scroll-soft pr-1">
+            {% for activity in xp_activities %}
+              <div class="rounded-2xl border border-white/10 bg-slate-950/60 p-4">
+                <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                  <div>
+                    <p class="text-sm font-bold text-white">{{ activity.title }}</p>
+                    <p class="mt-1 text-xs text-cyan-300">+{{ activity.xp_amount }} XP</p>
+                  </div>
+
+                  <div class="flex flex-col md:flex-row gap-3 w-full lg:w-auto">
+                    <form
+                      method="POST"
+                      action="{{ url_for('admin.update_xp_activity', activity_id=activity.id) }}"
+                      class="flex flex-col md:flex-row gap-3 w-full"
+                    >
+                      <input type="hidden" name="grade_id" value="{{ grade.id }}">
+
+                      <input
+                        type="text"
+                        name="title"
+                        value="{{ activity.title }}"
+                        required
+                        class="rounded-2xl border border-white/10 bg-slate-900 px-4 py-2.5 text-sm text-white outline-none transition focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400/30"
+                      >
+
+                      <input
+                        type="number"
+                        name="xp_amount"
+                        value="{{ activity.xp_amount }}"
+                        min="1"
+                        required
+                        class="w-[110px] rounded-2xl border border-white/10 bg-slate-900 px-4 py-2.5 text-sm text-white outline-none transition focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400/30"
+                      >
+
+                      <button
+                        type="submit"
+                        class="rounded-2xl border border-emerald-400/30 bg-emerald-400/10 px-4 py-2.5 text-xs font-bold text-emerald-200"
+                      >
+                        Guardar
+                      </button>
+                    </form>
+
+                    <form
+                      method="POST"
+                      action="{{ url_for('admin.delete_xp_activity', activity_id=activity.id) }}"
+                    >
+                      <input type="hidden" name="grade_id" value="{{ grade.id }}">
+                      <button
+                        type="submit"
+                        class="rounded-2xl border border-rose-400/30 bg-rose-400/10 px-4 py-2.5 text-xs font-bold text-rose-200"
+                      >
+                        Eliminar
+                      </button>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            {% else %}
+              <div class="rounded-2xl border border-dashed border-white/10 bg-slate-950/40 p-8 text-center">
+                <p class="text-sm font-semibold text-slate-200">Aún no hay actividades XP</p>
+                <p class="mt-2 text-xs text-slate-500">Crea la primera desde el panel izquierdo.</p>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const searchInput = document.getElementById('searchInput');
+    const rows = Array.from(document.querySelectorAll('.student-row'));
+    const chips = Array.from(document.querySelectorAll('.filter-chip'));
+    const lifeButtons = Array.from(document.querySelectorAll('.life-filter'));
+    const shouldOpenXpManager = {{ 'true' if xp_modal_open else 'false' }};
+
+    let activeFilter = 'all';
+    let activeLifeFilter = 'none';
+
+    function naturalSort(a, b) {
+      return a.localeCompare(b, undefined, {
+        numeric: true,
+        sensitivity: 'base'
+      });
+    }
+
+    function sortStudents() {
+      const container = document.getElementById('studentsContainer');
+      const sorted = [...rows].sort((a, b) => naturalSort(a.dataset.name, b.dataset.name));
+      sorted.forEach(el => container.appendChild(el));
+    }
+
+    sortStudents();
+
+    function applyFilters() {
+      const term = (searchInput.value || '').toLowerCase().trim();
+
+      rows.forEach(row => {
+        const name = row.dataset.name;
+        const pc = row.dataset.pc || '';
+        const life = parseInt(row.dataset.life || '0', 10);
+
+        let matchesSearch = !term || name.includes(term) || pc.includes(term);
+        let matchesFilter = true;
+        let matchesLife = true;
+
+        if (activeFilter === 'risk') {
+          matchesFilter = life <= 0;
+        }
+
+        if (activeLifeFilter === 'high') {
+          matchesLife = life >= 80 && life <= 100;
+        } else if (activeLifeFilter === 'medium') {
+          matchesLife = life >= 30 && life <= 79;
+        } else if (activeLifeFilter === 'low') {
+          matchesLife = life < 30;
+        }
+
+        row.style.display = (matchesSearch && matchesFilter && matchesLife) ? '' : 'none';
+      });
+
+      updateSelectAllState();
+      updateBulkActionsUI();
+    }
+
+    searchInput?.addEventListener('input', applyFilters);
+
+    chips.forEach(chip => {
+      chip.addEventListener('click', () => {
+        activeFilter = chip.dataset.filter;
+        chips.forEach(c => c.classList.remove('ring-2', 'ring-cyan-400/50'));
+        chip.classList.add('ring-2', 'ring-cyan-400/50');
+        applyFilters();
+      });
+    });
+
+    const allChip = chips.find(c => c.dataset.filter === 'all');
+    if (allChip) allChip.classList.add('ring-2', 'ring-cyan-400/50');
+
+    lifeButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const value = btn.dataset.lifeFilter;
+        activeLifeFilter = (activeLifeFilter === value) ? 'none' : value;
+
+        lifeButtons.forEach(b =>
+          b.classList.remove('ring-2', 'ring-offset-1', 'ring-emerald-400/60', 'ring-amber-400/60', 'ring-rose-400/60')
+        );
+
+        if (activeLifeFilter === 'high' && value === 'high') {
+          btn.classList.add('ring-2', 'ring-offset-1', 'ring-emerald-400/60');
+        } else if (activeLifeFilter === 'medium' && value === 'medium') {
+          btn.classList.add('ring-2', 'ring-offset-1', 'ring-amber-400/60');
+        } else if (activeLifeFilter === 'low' && value === 'low') {
+          btn.classList.add('ring-2', 'ring-offset-1', 'ring-rose-400/60');
+        }
+
+        applyFilters();
+      });
+    });
+
+    const xpManagerModal = document.getElementById('xpManagerModal');
+    const openXpManager = document.getElementById('openXpManager');
+    const closeXpManager = document.getElementById('closeXpManager');
+
+    function showXpManager() {
+      if (!xpManagerModal) return;
+      xpManagerModal.classList.remove('hidden');
+      xpManagerModal.classList.add('flex');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function hideXpManager() {
+      if (!xpManagerModal) return;
+      xpManagerModal.classList.add('hidden');
+      xpManagerModal.classList.remove('flex');
+      document.body.style.overflow = '';
+    }
+
+    openXpManager?.addEventListener('click', showXpManager);
+    closeXpManager?.addEventListener('click', hideXpManager);
+
+    xpManagerModal?.addEventListener('click', (e) => {
+      if (e.target === xpManagerModal) hideXpManager();
+    });
+
+    if (shouldOpenXpManager) {
+      showXpManager();
+    }
+
+    const selectAllStudents = document.getElementById('selectAllStudents');
+    const studentCheckboxes = Array.from(document.querySelectorAll('.student-checkbox'));
+    const floatingBulkBar = document.getElementById('floatingBulkBar');
+    const selectedStudentsCountFloating = document.getElementById('selectedStudentsCountFloating');
+    const floatingXpActivitySelect = document.getElementById('floatingXpActivitySelect');
+    const floatingApplyBtn = document.getElementById('floatingApplyBtn');
+    const clearSelectionBtn = document.getElementById('clearSelectionBtn');
+
+    function getVisibleStudentCheckboxes() {
+      return studentCheckboxes.filter(checkbox => {
+        const row = checkbox.closest('.student-row');
+        return row && row.style.display !== 'none';
+      });
+    }
+
+    function clearAllSelections() {
+      studentCheckboxes.forEach(cb => cb.checked = false);
+      updateSelectAllState();
+      updateBulkActionsUI();
+    }
+
+    function updateBulkActionsUI() {
+      const checked = studentCheckboxes.filter(cb => cb.checked);
+      const checkedCount = checked.length;
+
+      selectedStudentsCountFloating.textContent = checkedCount;
+
+      floatingBulkBar.classList.toggle('is-visible', checkedCount > 0);
+
+      studentCheckboxes.forEach(cb => {
+        const row = cb.closest('.student-row');
+        if (!row) return;
+        row.classList.toggle('is-selected', cb.checked);
+      });
+
+      const hasActivity = floatingXpActivitySelect.value !== '';
+      floatingApplyBtn.disabled = !(checkedCount > 0 && hasActivity);
+    }
+
+    function updateSelectAllState() {
+      if (!selectAllStudents) return;
+
+      const visibleCheckboxes = getVisibleStudentCheckboxes();
+      if (!visibleCheckboxes.length) {
+        selectAllStudents.checked = false;
+        selectAllStudents.indeterminate = false;
+        return;
+      }
+
+      const checkedVisible = visibleCheckboxes.filter(cb => cb.checked).length;
+
+      selectAllStudents.checked = checkedVisible === visibleCheckboxes.length;
+      selectAllStudents.indeterminate = checkedVisible > 0 && checkedVisible < visibleCheckboxes.length;
+    }
+
+    selectAllStudents?.addEventListener('change', () => {
+      const visibleCheckboxes = getVisibleStudentCheckboxes();
+      visibleCheckboxes.forEach(cb => {
+        cb.checked = selectAllStudents.checked;
+      });
+      updateSelectAllState();
+      updateBulkActionsUI();
+    });
+
+    studentCheckboxes.forEach(cb => {
+      cb.addEventListener('change', () => {
+        updateSelectAllState();
+        updateBulkActionsUI();
+      });
+    });
+
+    floatingXpActivitySelect?.addEventListener('change', updateBulkActionsUI);
+    clearSelectionBtn?.addEventListener('click', clearAllSelections);
+
+    document.querySelectorAll('[data-open-edit-student]').forEach(button => {
+      button.addEventListener('click', () => {
+        const studentId = button.getAttribute('data-open-edit-student');
+        const modal = document.querySelector(`[data-edit-student-modal="${studentId}"]`);
+        if (modal) {
+          modal.classList.remove('hidden');
+          document.body.style.overflow = 'hidden';
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-close-edit-student]').forEach(button => {
+      button.addEventListener('click', () => {
+        const studentId = button.getAttribute('data-close-edit-student');
+        const modal = document.querySelector(`[data-edit-student-modal="${studentId}"]`);
+        if (modal) {
+          modal.classList.add('hidden');
+          document.body.style.overflow = '';
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-edit-student-backdrop]').forEach(backdrop => {
+      backdrop.addEventListener('click', () => {
+        const studentId = backdrop.getAttribute('data-edit-student-backdrop');
+        const modal = document.querySelector(`[data-edit-student-modal="${studentId}"]`);
+        if (modal) {
+          modal.classList.add('hidden');
+          document.body.style.overflow = '';
+        }
+      });
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        if (xpManagerModal && !xpManagerModal.classList.contains('hidden')) {
+          hideXpManager();
+        }
+
+        document.querySelectorAll('[data-edit-student-modal]').forEach(modal => {
+          if (!modal.classList.contains('hidden')) {
+            modal.classList.add('hidden');
+            document.body.style.overflow = '';
+          }
+        });
+      }
+    });
+
+    updateSelectAllState();
+    updateBulkActionsUI();
+  </script>
+</body>
+</html>

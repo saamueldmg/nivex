@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NIVEX | Normas de la sala</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    html, body { min-height: 100%; }
+    body { font-variant-numeric: tabular-nums; }
+
+    .glass {
+      background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+      backdrop-filter: blur(18px);
+    }
+
+    .mesh {
+      background:
+        radial-gradient(circle at top left, rgba(34,211,238,0.16), transparent 28%),
+        radial-gradient(circle at 85% 15%, rgba(59,130,246,0.14), transparent 22%),
+        radial-gradient(circle at 50% 100%, rgba(168,85,247,0.10), transparent 24%);
+    }
+
+    .card-glow:hover {
+      box-shadow: 0 12px 40px rgba(245, 158, 11, 0.12);
+    }
+
+    .scroll-soft::-webkit-scrollbar { width: 8px; height: 8px; }
+    .scroll-soft::-webkit-scrollbar-thumb {
+      background: rgba(148,163,184,.35);
+      border-radius: 999px;
+    }
+    .scroll-soft::-webkit-scrollbar-track { background: transparent; }
+  </style>
+</head>
+
+<body class="bg-slate-950 text-white mesh">
+  <div class="min-h-screen relative overflow-hidden">
+
+    <header class="relative z-10 border-b border-white/10 bg-slate-950/65 backdrop-blur-xl">
+      <div class="max-w-5xl mx-auto px-6 py-6">
+        <div class="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
+
+          <div class="max-w-3xl">
+            <div class="flex items-center gap-3">
+              <span class="inline-flex items-center rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-cyan-200">
+                NIVEX
+              </span>
+              <span class="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-300">
+                Normas de la sala
+              </span>
+            </div>
+
+            <h1 class="mt-4 text-3xl md:text-4xl font-black tracking-tight">
+              Configura las normas de la sala de sistemas
+            </h1>
+
+            <p class="mt-3 text-slate-300 max-w-2xl">
+              Define las normas de la sala y cuánta vida pierde un estudiante cuando no las cumple.
+            </p>
+          </div>
+
+          <a
+            href="{{ url_for('admin.dashboard') }}"
+            class="inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-slate-100 transition hover:bg-white/10"
+          >
+            Volver al panel
+          </a>
+
+        </div>
+      </div>
+    </header>
+
+    <main class="relative z-10 max-w-5xl mx-auto px-6 py-8 space-y-8">
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <section class="space-y-3">
+            {% for category, message in messages %}
+              <div class="rounded-2xl border px-4 py-3 text-sm
+                {% if category == 'success' %}
+                  border-emerald-400/20 bg-emerald-400/10 text-emerald-200
+                {% elif category == 'error' %}
+                  border-rose-400/20 bg-rose-400/10 text-rose-200
+                {% elif category == 'warning' %}
+                  border-amber-400/20 bg-amber-400/10 text-amber-200
+                {% else %}
+                  border-white/10 bg-white/5 text-slate-200
+                {% endif %}
+              ">
+                {{ message }}
+              </div>
+            {% endfor %}
+          </section>
+        {% endif %}
+      {% endwith %}
+
+      <section class="glass rounded-[32px] border border-white/10 p-6 md:p-7">
+        <div>
+          <div class="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] uppercase tracking-[0.22em] text-slate-300">
+            Nueva norma
+          </div>
+
+          <h2 class="mt-3 text-2xl md:text-3xl font-black tracking-tight">
+            Agregar regla
+          </h2>
+
+          <p class="mt-2 text-sm text-slate-400 max-w-xl">
+            Registra la norma y define cuánta vida se descuenta cuando el estudiante la incumple.
+          </p>
+        </div>
+
+        <form
+          action="{{ url_for('admin.save_rule') }}"
+          method="POST"
+          class="mt-6 grid gap-5 md:grid-cols-[3fr_1fr]"
+        >
+          <div class="grid gap-4 md:grid-cols-[2.4fr_0.9fr]">
+            <div>
+              <label class="mb-2 block text-sm font-medium text-slate-200">Norma</label>
+              <input
+                type="text"
+                name="title"
+                placeholder="Ejemplo: Hablar sin autorización"
+                required
+                class="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-4 py-3 text-white placeholder:text-slate-500 outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20"
+              >
+            </div>
+
+            <div>
+              <label class="mb-2 block text-sm font-medium text-slate-200">Vida que resta</label>
+              <input
+                type="number"
+                name="life_penalty"
+                min="1"
+                max="100"
+                value="5"
+                required
+                class="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-4 py-3 text-white outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20"
+              >
+            </div>
+          </div>
+
+          <div class="flex items-end">
+            <button
+              type="submit"
+              class="w-full inline-flex items-center justify-center rounded-2xl bg-cyan-400 px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-cyan-300"
+            >
+              Registrar
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <section class="glass rounded-[32px] border border-white/10 p-6 md:p-7">
+        <div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+          <div>
+            <div class="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] uppercase tracking-[0.22em] text-slate-300">
+              Reglas activas
+            </div>
+
+            <h2 class="mt-3 text-2xl md:text-3xl font-black tracking-tight">
+              Normas registradas
+            </h2>
+
+            <p class="mt-2 text-sm text-slate-400">
+              Estas son las reglas que luego podrás usar para descontar vida por incumplimiento.
+            </p>
+          </div>
+
+          {% if rules %}
+            <div class="w-full md:w-80">
+              <input
+                type="text"
+                id="ruleSearchInput"
+                placeholder="Buscar norma..."
+                class="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-4 py-3 text-sm text-white placeholder:text-slate-500 outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20"
+              >
+            </div>
+          {% endif %}
+        </div>
+
+        {% if rules %}
+          <div id="rulesContainer" class="mt-6 max-h-[520px] overflow-y-auto scroll-soft pr-2 space-y-4">
+            {% for rule in rules %}
+              <article
+                class="rule-card card-glow rounded-[24px] border border-white/10 bg-slate-950/70 p-5 transition duration-300"
+                data-rule-title="{{ rule.title|lower }}"
+              >
+                <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+
+                  <div>
+                    <h3 class="text-lg font-bold text-white">{{ rule.title }}</h3>
+
+                    {% if rule.description %}
+                      <p class="mt-1 text-sm text-slate-400">
+                        {{ rule.description }}
+                      </p>
+                    {% endif %}
+
+                    <p class="mt-1 text-sm text-slate-400">
+                      Penalización:
+                      <span class="font-semibold text-rose-300">
+                        -{{ rule.life_penalty }} de vida
+                      </span>
+                    </p>
+                  </div>
+
+                  <div class="flex flex-wrap gap-3">
+                    <button
+                      type="button"
+                      class="openEditRuleModal inline-flex items-center justify-center rounded-2xl border border-amber-400/20 bg-amber-400/10 px-4 py-2.5 text-sm font-semibold text-amber-200 transition hover:bg-amber-400/20"
+                      data-rule-id="{{ rule.id }}"
+                      data-rule-title="{{ rule.title }}"
+                      data-rule-life="{{ rule.life_penalty }}"
+                    >
+                      Editar
+                    </button>
+
+                    <form action="{{ url_for('admin.delete_rule', rule_id=rule.id) }}" method="POST" onsubmit="return confirm('¿Quiéres eliminar esta norma?');">
+                      <button
+                        type="submit"
+                        class="inline-flex items-center justify-center rounded-2xl border border-rose-400/20 bg-rose-400/10 px-4 py-2.5 text-sm font-semibold text-rose-200 transition hover:bg-rose-400/20"
+                      >
+                        Eliminar
+                      </button>
+                    </form>
+                  </div>
+
+                </div>
+              </article>
+            {% endfor %}
+          </div>
+
+          <div id="emptySearchState" class="hidden mt-6 rounded-[24px] border border-dashed border-white/10 bg-slate-950/40 p-8 text-center">
+            <h3 class="text-xl font-bold text-white">
+              No se encontraron normas
+            </h3>
+            <p class="mt-2 text-slate-400 max-w-xl mx-auto">
+              Intenta con otro nombre o una palabra clave diferente.
+            </p>
+          </div>
+        {% else %}
+          <div class="mt-6 rounded-[24px] border border-dashed border-white/10 bg-slate-950/40 p-8 text-center">
+            <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl border border-red-400/20 bg-red-400/10 text-2xl text-red-200">
+              !
+            </div>
+
+            <h3 class="mt-5 text-xl font-bold">
+              Aún no hay normas registradas
+            </h3>
+
+            <p class="mt-2 text-slate-400 max-w-xl mx-auto">
+              Agrega la primera norma para empezar
+            </p>
+          </div>
+        {% endif %}
+      </section>
+
+    </main>
+  </div>
+
+  <!-- MODAL EDITAR NORMA -->
+  <div id="editRuleModal" class="fixed inset-0 z-40 hidden items-center justify-center bg-slate-950/80 px-4">
+    <div class="w-full max-w-2xl rounded-[30px] border border-white/10 bg-slate-900 shadow-2xl overflow-hidden">
+      <div class="flex items-center justify-between border-b border-white/10 px-6 py-4">
+        <div>
+          <p class="text-xs uppercase tracking-[0.22em] text-amber-300">Normas</p>
+          <h3 class="mt-1 text-xl md:text-2xl font-black">Editar norma</h3>
+        </div>
+        <button type="button" id="closeEditRuleModal" class="text-slate-400 hover:text-white text-xl">✕</button>
+      </div>
+
+      <div class="p-6">
+        <form id="editRuleForm" method="POST">
+          <div class="space-y-4">
+            <div>
+              <label for="editRuleTitle" class="mb-2 block text-sm font-medium text-slate-200">Norma</label>
+              <input
+                id="editRuleTitle"
+                type="text"
+                name="title"
+                required
+                class="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-4 py-3 text-white placeholder:text-slate-500 outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20"
+              >
+            </div>
+
+            <div>
+              <label for="editRuleLifePenalty" class="mb-2 block text-sm font-medium text-slate-200">Vida que resta</label>
+              <input
+                id="editRuleLifePenalty"
+                type="number"
+                name="life_penalty"
+                min="1"
+                max="100"
+                required
+                class="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-4 py-3 text-white outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20"
+              >
+            </div>
+          </div>
+
+          <div class="mt-6 flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
+            <button
+              type="button"
+              id="cancelEditRuleModal"
+              class="inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-slate-100 transition hover:bg-white/10"
+            >
+              Cancelar
+            </button>
+
+            <button
+              type="submit"
+              class="inline-flex items-center justify-center rounded-2xl bg-amber-400 px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-amber-300"
+            >
+              Guardar cambios
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const editRuleModal = document.getElementById('editRuleModal');
+    const closeEditRuleModal = document.getElementById('closeEditRuleModal');
+    const cancelEditRuleModal = document.getElementById('cancelEditRuleModal');
+    const editRuleForm = document.getElementById('editRuleForm');
+    const editRuleTitle = document.getElementById('editRuleTitle');
+    const editRuleLifePenalty = document.getElementById('editRuleLifePenalty');
+    const editButtons = Array.from(document.querySelectorAll('.openEditRuleModal'));
+
+    function showEditRuleModal() {
+      editRuleModal.classList.remove('hidden');
+      editRuleModal.classList.add('flex');
+    }
+
+    function hideEditRuleModal() {
+      editRuleModal.classList.add('hidden');
+      editRuleModal.classList.remove('flex');
+    }
+
+    editButtons.forEach(button => {
+      button.addEventListener('click', () => {
+        const ruleId = button.dataset.ruleId;
+        const ruleTitle = button.dataset.ruleTitle;
+        const ruleLife = button.dataset.ruleLife;
+
+        editRuleForm.action = `/admin/rules/${ruleId}/update`;
+        editRuleTitle.value = ruleTitle || '';
+        editRuleLifePenalty.value = ruleLife || '';
+        showEditRuleModal();
+      });
+    });
+
+    closeEditRuleModal?.addEventListener('click', hideEditRuleModal);
+    cancelEditRuleModal?.addEventListener('click', hideEditRuleModal);
+
+    const ruleSearchInput = document.getElementById('ruleSearchInput');
+    const ruleCards = Array.from(document.querySelectorAll('.rule-card'));
+    const emptySearchState = document.getElementById('emptySearchState');
+
+    function applyRuleFilter() {
+      if (!ruleSearchInput) return;
+
+      const term = ruleSearchInput.value.toLowerCase().trim();
+      let visibleCount = 0;
+
+      ruleCards.forEach(card => {
+        const title = card.dataset.ruleTitle || '';
+        const matches = !term || title.includes(term);
+
+        card.style.display = matches ? '' : 'none';
+        if (matches) visibleCount += 1;
+      });
+
+      if (emptySearchState) {
+        emptySearchState.classList.toggle('hidden', visibleCount > 0);
+      }
+    }
+
+    ruleSearchInput?.addEventListener('input', applyRuleFilter);
+  </script>
+</body>
+</html>

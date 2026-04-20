@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NIVEX | Panel docente</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    html, body { min-height: 100%; }
+    body { font-variant-numeric: tabular-nums; }
+    .glass {
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+      backdrop-filter: blur(18px);
+      transition: background-color 150ms ease, box-shadow 150ms ease;
+    }
+    .mesh {
+      background:
+        radial-gradient(circle at top left, rgba(34,211,238,0.16), transparent 28%),
+        radial-gradient(circle at 85% 15%, rgba(59,130,246,0.14), transparent 22%),
+        radial-gradient(circle at 50% 100%, rgba(168,85,247,0.10), transparent 24%);
+    }
+    .card-glow {
+      transition: transform 150ms ease, box-shadow 150ms ease, border-color 150ms ease, background-color 150ms ease;
+    }
+    .card-glow:hover {
+      box-shadow: 0 12px 40px rgba(34, 211, 238, 0.12);
+    }
+    [data-modal-backdrop].hidden,
+    [data-modal-panel].hidden {
+      display: none;
+    }
+
+    .soft-scroll::-webkit-scrollbar {
+      width: 10px;
+    }
+    .soft-scroll::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.45);
+      border-radius: 999px;
+    }
+    .soft-scroll::-webkit-scrollbar-thumb {
+      background: rgba(148, 163, 184, 0.28);
+      border-radius: 999px;
+      border: 2px solid transparent;
+      background-clip: padding-box;
+    }
+    .soft-scroll::-webkit-scrollbar-thumb:hover {
+      background: rgba(34, 211, 238, 0.35);
+      background-clip: padding-box;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-white mesh">
+  <div class="min-h-screen relative overflow-hidden">
+    <div class="absolute inset-0 pointer-events-none">
+      <div class="absolute -top-24 left-0 h-72 w-72 rounded-full bg-cyan-400/10 blur-3xl"></div>
+      <div class="absolute top-32 right-0 h-80 w-80 rounded-full bg-blue-500/10 blur-3xl"></div>
+      <div class="absolute bottom-0 left-1/3 h-80 w-80 rounded-full bg-fuchsia-500/10 blur-3xl"></div>
+    </div>
+
+    <!-- HEADER -->
+    <header class="relative z-10 border-b border-white/10 bg-slate-950/70 backdrop-blur-xl">
+      <div class="max-w-7xl mx-auto px-6 py-5 flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+        <div class="max-w-3xl">
+          <div class="flex items-center gap-3">
+            <span class="inline-flex items-center rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-cyan-200">
+              NIVEX
+            </span>
+            <span class="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] text-slate-300 uppercase tracking-[0.18em]">
+              Panel docente
+            </span>
+          </div>
+
+          <h1 class="mt-3 text-[1.9rem] md:text-[2.2rem] font-black tracking-tight">
+            Gestiona tus grados
+          </h1>
+          <p class="mt-2 text-sm md:text-base text-slate-300 max-w-xl">
+            Crea, visualiza y administra tus grupos desde un solo lugar.
+          </p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-3">
+          <a
+            href="{{ url_for('public.home') }}"
+            class="inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-semibold text-slate-100 transition hover:bg-white/10"
+          >
+            Ver portal público
+          </a>
+
+          <a
+            href="{{ url_for('admin.rules') }}"
+            class="inline-flex items-center justify-center rounded-2xl border border-amber-400/30 bg-amber-400/10 px-4 py-2.5 text-sm font-semibold text-amber-200 transition hover:bg-amber-400/20"
+          >
+            Normas de la sala
+          </a>
+
+          <button
+            type="button"
+            data-open-modal
+            class="inline-flex items-center justify-center rounded-2xl bg-cyan-400 px-5 py-2.5 text-sm font-bold text-slate-950 transition hover:bg-cyan-300"
+          >
+            + Crear grado
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- MAIN -->
+    <main class="relative z-10 max-w-7xl mx-auto px-4 md:px-6 py-6 space-y-6">
+      <!-- MÉTRICAS -->
+      <section class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        <article class="glass rounded-[18px] border border-white/10 p-3 card-glow">
+          <div class="flex items-center justify-between gap-3">
+            <div>
+              <p class="text-[11px] text-slate-400 uppercase tracking-[0.18em]">Grados</p>
+              <h2 class="mt-1 text-xl md:text-2xl font-black tracking-tight">{{ grades|length }}</h2>
+            </div>
+            <div class="rounded-xl border border-cyan-400/20 bg-cyan-400/10 px-2.5 py-1 text-[10px] font-semibold text-cyan-200">
+              Activos
+            </div>
+          </div>
+          <p class="mt-2 text-[11px] text-slate-500">Grupos creados en el sistema.</p>
+        </article>
+
+        <article class="glass rounded-[18px] border border-white/10 p-3 card-glow">
+          <div class="flex items-center justify-between gap-3">
+            <div>
+              <p class="text-[11px] text-slate-400 uppercase tracking-[0.18em]">Estudiantes</p>
+              <h2 class="mt-1 text-xl md:text-2xl font-black tracking-tight">
+                {{ grades | sum(attribute='count') if grades else 0 }}
+              </h2>
+            </div>
+            <div class="rounded-xl border border-emerald-400/20 bg-emerald-400/10 px-2.5 py-1 text-[10px] font-semibold text-emerald-200">
+              Total
+            </div>
+          </div>
+          <p class="mt-2 text-[11px] text-slate-500">Fichas generadas actualmente.</p>
+        </article>
+
+        <article class="glass rounded-[18px] border border-white/10 p-3 card-glow">
+          <div class="flex items-center justify-between gap-3">
+            <div>
+              <p class="text-[11px] text-slate-400 uppercase tracking-[0.18em]">Actividades</p>
+              <h2 class="mt-1 text-xl md:text-2xl font-black tracking-tight">0</h2>
+            </div>
+            <div class="rounded-xl border border-amber-400/20 bg-amber-400/10 px-2.5 py-1 text-[10px] font-semibold text-amber-200">
+              Pendiente
+            </div>
+          </div>
+          <p class="mt-2 text-[11px] text-slate-500">Espacio listo para seguimiento.</p>
+        </article>
+
+        <article class="glass rounded-[18px] border border-white/10 p-3 card-glow">
+          <div class="flex items-center justify-between gap-3">
+            <div>
+              <p class="text-[11px] text-slate-400 uppercase tracking-[0.18em]">Canjes</p>
+              <h2 class="mt-1 text-xl md:text-2xl font-black tracking-tight">0</h2>
+            </div>
+            <div class="rounded-xl border border-rose-400/20 bg-rose-400/10 px-2.5 py-1 text-[10px] font-semibold text-rose-200">
+              Revisión
+            </div>
+          </div>
+          <p class="mt-2 text-[11px] text-slate-500">Solicitudes pendientes por revisar.</p>
+        </article>
+      </section>
+
+      <!-- GESTIÓN DE GRADOS -->
+      <section class="glass rounded-[26px] border border-white/10 p-5 md:p-6">
+        <div class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+          <div>
+            <div class="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] uppercase tracking-[0.22em] text-slate-300">
+              Gestión
+            </div>
+            <h2 class="mt-3 text-2xl md:text-3xl font-black tracking-tight">Grados</h2>
+            <p class="mt-2 text-sm text-slate-400 max-w-xl">
+              Administra tus grupos y entra directo a sus fichas, progreso y acciones.
+            </p>
+          </div>
+        </div>
+
+        {% if grades %}
+          <div class="mt-5 max-h-[520px] overflow-y-auto pr-2 soft-scroll">
+            <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+              {% for grade in grades %}
+                <article class="group relative overflow-hidden rounded-[20px] border border-white/10 bg-slate-950/70 p-4 transition duration-300 hover:-translate-y-0.5 hover:border-cyan-400/30 hover:bg-slate-950 card-glow">
+                  <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-300/40 to-transparent"></div>
+
+                  <div class="flex items-start justify-between gap-3">
+                    <div>
+                      <p class="text-[10px] uppercase tracking-[0.22em] text-cyan-300">Grado</p>
+                      <h3 class="mt-1.5 text-xl font-black tracking-tight text-white">{{ grade.name }}</h3>
+                    </div>
+
+                    <div class="rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-right min-w-[108px]">
+                      <p class="text-[9px] uppercase tracking-[0.16em] text-slate-400">Estudiantes</p>
+                      <p class="mt-1 text-lg font-black text-white">{{ grade.count }}</p>
+                    </div>
+                  </div>
+
+                  <div class="mt-3 flex flex-wrap gap-2 text-[11px]">
+                    <span class="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-slate-300">Activo</span>
+                    {% if grade.is_public %}
+                      <span class="rounded-full border border-emerald-400/40 bg-emerald-400/10 px-2.5 py-1 text-emerald-200">
+                        Visible en portal
+                      </span>
+                    {% else %}
+                      <span class="rounded-full border border-slate-500/50 bg-slate-800/70 px-2.5 py-1 text-slate-300">
+                        Oculto en portal
+                      </span>
+                    {% endif %}
+                  </div>
+
+                  <div class="mt-4 grid gap-2.5">
+                    <a
+                      href="{{ url_for('admin.grade_students', grade_id=grade.id) }}"
+                      class="inline-flex items-center justify-center rounded-2xl bg-cyan-400 px-4 py-2.5 text-sm font-bold text-slate-950 transition hover:bg-cyan-300"
+                    >
+                      Gestionar grupo
+                    </a>
+
+                    <div class="flex flex-wrap items-center gap-2.5">
+                      <a
+                        href="{{ url_for('public.grade_detail', grade_name=grade.name) }}"
+                        class="inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-3.5 py-2 text-sm font-semibold text-slate-100 transition hover:bg-white/10"
+                      >
+                        Ver fichas
+                      </a>
+
+                      <form
+                        action="{{ url_for('admin.toggle_grade_public', grade_id=grade.id) }}"
+                        method="POST"
+                      >
+                        <button
+                          type="submit"
+                          class="inline-flex items-center justify-center rounded-2xl border px-3.5 py-2 text-sm font-semibold transition
+                            {% if grade.is_public %}
+                              border-emerald-400/30 bg-emerald-400/10 text-emerald-200 hover:bg-emerald-400/20
+                            {% else %}
+                              border-slate-500/40 bg-slate-800/60 text-slate-200 hover:bg-slate-800
+                            {% endif %}"
+                        >
+                          {% if grade.is_public %}
+                            Ocultar del portal
+                          {% else %}
+                            Mostrar en portal
+                          {% endif %}
+                        </button>
+                      </form>
+
+                      <form
+                        action="{{ url_for('admin.delete_grade', grade_name=grade.name) }}"
+                        method="POST"
+                        onsubmit="return confirm('¿Seguro que quieres eliminar el grado {{ grade.name }} y sus fichas?');"
+                      >
+                        <button
+                          type="submit"
+                          class="inline-flex items-center justify-center rounded-2xl border border-rose-400/20 bg-rose-400/10 px-3.5 py-2 text-sm font-semibold text-rose-200 transition hover:bg-rose-400/20"
+                        >
+                          Eliminar
+                        </button>
+                      </form>
+                    </div>
+                  </div>
+                </article>
+              {% endfor %}
+            </div>
+          </div>
+        {% else %}
+          <div class="mt-7 rounded-[24px] border border-dashed border-white/10 bg-slate-950/40 p-10 text-center">
+            <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl border border-cyan-400/20 bg-cyan-400/10 text-2xl text-cyan-200">
+              +
+            </div>
+            <h3 class="mt-5 text-2xl font-bold">Aún no hay grados</h3>
+            <p class="mt-3 mx-auto text-slate-400 max-w-md">
+              Crea tu primer grupo desde el botón superior.
+            </p>
+            <button
+              type="button"
+              data-open-modal
+              class="mt-6 inline-flex items-center justify-center rounded-2xl bg-cyan-400 px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-cyan-300"
+            >
+              Crear primer grado
+            </button>
+          </div>
+        {% endif %}
+      </section>
+    </main>
+  </div>
+
+  <div
+    data-modal-backdrop
+    class="hidden fixed inset-0 z-40 bg-slate-950/70 backdrop-blur-sm"
+  ></div>
+
+  <section
+    data-modal-panel
+    class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6"
+    aria-modal="true"
+    role="dialog"
+    aria-labelledby="modal-title"
+  >
+    <div class="w-full max-w-2xl overflow-hidden rounded-[32px] border border-white/10 bg-slate-900/95 shadow-2xl shadow-cyan-500/10">
+      <div class="relative overflow-hidden border-b border-white/10 px-6 py-6">
+        <div class="absolute inset-0 bg-gradient-to-r from-cyan-400/10 via-blue-500/10 to-fuchsia-500/10"></div>
+        <div class="relative flex items-start justify-between gap-4">
+          <div>
+            <p class="text-xs uppercase tracking-[0.24em] text-cyan-300">Nuevo grado</p>
+            <h2 id="modal-title" class="mt-2 text-2xl font-black tracking-tight">Crear grado</h2>
+            <p class="mt-2 text-sm text-slate-300 max-w-lg">
+              Define el grupo y sus valores iniciales.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            data-close-modal
+            class="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-xl text-slate-200 transition hover:bg-white/10"
+            aria-label="Cerrar modal"
+          >
+            ×
+          </button>
+        </div>
+      </div>
+
+      <form action="{{ url_for('admin.create_grade') }}" method="POST" class="px-6 py-6 space-y-6">
+        <div class="grid gap-5 md:grid-cols-2">
+          <div class="md:col-span-2">
+            <label class="mb-2 block text-sm font-medium text-slate-200">Nombre del grado</label>
+            <input
+              type="text"
+              name="grade_name"
+              placeholder="Ejemplo: 8-1"
+              required
+              class="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-4 py-3 text-white placeholder:text-slate-500 outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20"
+            >
+          </div>
+
+          <div>
+            <label class="mb-2 block text-sm font-medium text-slate-200">Cantidad de estudiantes</label>
+            <input
+              type="number"
+              name="count"
+              min="1"
+              max="50"
+              value="33"
+              required
+              class="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-4 py-3 text-white outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20"
+            >
+          </div>
+
+          <div>
+            <label class="mb-2 block text-sm font-medium text-slate-200">Nivel inicial</label>
+            <input
+              type="number"
+              name="initial_level"
+              min="1"
+              value="2"
+              required
+              class="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-4 py-3 text-white outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20"
+            >
+          </div>
+
+          <div>
+            <label class="mb-2 block text-sm font-medium text-slate-200">XP inicial</label>
+            <input
+              type="number"
+              name="initial_xp"
+              min="0"
+              value="0"
+              required
+              class="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-4 py-3 text-white outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20"
+            >
+          </div>
+
+          <div>
+            <label class="mb-2 block text-sm font-medium text-slate-200">Monedas iniciales</label>
+            <input
+              type="number"
+              name="initial_coins"
+              min="0"
+              value="0"
+              required
+              class="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-4 py-3 text-white outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20"
+            >
+          </div>
+
+          <div class="md:col-span-2">
+            <label class="mb-2 block text-sm font-medium text-slate-200">Vida inicial</label>
+            <input
+              type="number"
+              name="initial_life"
+              min="1"
+              max="100"
+              value="100"
+              required
+              class="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-4 py-3 text-white outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20"
+            >
+          </div>
+        </div>
+
+        <div class="rounded-[24px] border border-cyan-400/15 bg-cyan-400/10 p-4">
+          <p class="text-sm text-slate-300">
+            Puedes iniciar directamente en el nivel del periodo actual, por ejemplo Nivel 2.
+          </p>
+        </div>
+
+        <div class="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+          <button
+            type="button"
+            data-close-modal
+            class="inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-semibold text-slate-100 transition hover:bg-white/10"
+          >
+            Cancelar
+          </button>
+
+          <button
+            type="submit"
+            class="inline-flex items-center justify-center rounded-2xl bg-cyan-400 px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-cyan-300"
+          >
+            Crear grado
+          </button>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <script>
+    const openButtons = document.querySelectorAll('[data-open-modal]');
+    const closeButtons = document.querySelectorAll('[data-close-modal]');
+    const backdrop = document.querySelector('[data-modal-backdrop]');
+    const panel = document.querySelector('[data-modal-panel]');
+
+    function openModal() {
+      backdrop.classList.remove('hidden');
+      panel.classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal() {
+      backdrop.classList.add('hidden');
+      panel.classList.add('hidden');
+      document.body.style.overflow = '';
+    }
+
+    openButtons.forEach(btn => btn.addEventListener('click', openModal));
+    closeButtons.forEach(btn => btn.addEventListener('click', closeModal));
+    backdrop.addEventListener('click', closeModal);
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !panel.classList.contains('hidden')) {
+        closeModal();
+      }
+    });
+  </script>
+</body>
+</html>
