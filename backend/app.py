@@ -3,10 +3,9 @@ import os
 from flask import Flask, jsonify, redirect, url_for
 from backend.config import Config
 from backend.extensions import db, migrate
-from routes.admin import admin_bp
-from routes.public import public_bp
-import models
-
+from backend.routes.admin import admin_bp
+from backend.routes.public import public_bp
+from backend import models
 
 def create_app():
     app = Flask(__name__)
