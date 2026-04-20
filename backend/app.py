@@ -7,6 +7,7 @@ from backend.routes.admin import admin_bp
 from backend.routes.public import public_bp
 from backend import models
 
+
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
